@@ -907,6 +907,13 @@ asmlinkage long sys_statx(int dfd, const char __user *path, unsigned flags,
 asmlinkage long sys_rseq(struct rseq __user *rseq, uint32_t rseq_len,
 			 int flags, uint32_t sig);
 
+// lotation lock system call
+asmlinkage long sys_set_orientation(int degree);
+
+asmlinkage long sys_rotation_lock(int low, int high, int type); 
+
+asmlinkage long sys_rotation_unlock(long id); 
+
 /*
  * Architecture-specific system calls
  */
