@@ -8,7 +8,7 @@
 
 int orientation;
 rwlock_t orientation_lock;
-rwlock_t listlock;
+rwlock_t list_lock;
 rwlock_t state_lock;
 
 int access_state[360];
@@ -25,6 +25,7 @@ struct thread_list {
 struct thread_list head;
 
 long set_orientation (int degree){
+    static int isinit = 0;
 
 }
 
