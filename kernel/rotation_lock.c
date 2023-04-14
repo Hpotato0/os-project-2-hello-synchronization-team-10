@@ -24,6 +24,10 @@ struct thread_list {
 }
 struct thread_list head;
 
+int is_degree_in_range(int degree, int low, int high)
+{
+    return ((low <= high && low <= degree && degree <= high) || (low >= high && high <= degree && degree <= (low + 360)));
+}
 long set_orientation (int degree){
     static int isinit = 0;
 
@@ -32,6 +36,7 @@ long set_orientation (int degree){
 long rotation_lock(int low, int high, int type){
     int local_orienation;
     static long id = 0;
+    int start = 1;
 
     //(1) Struct dynamic alloc and init
     struct thread_list *new_thread = (thread_list*)malloc(sizeof(struct thread_list));
@@ -39,7 +44,16 @@ long rotation_lock(int low, int high, int type){
     new_thread -> low = low;
     new_thread -> high = high;
 
-    //(2) Check R/W locks and
+    //(2) Check R/W locks & orientation, then set start
+    read_lock(&orientation_lock);
+    local_orientation = orientation;
+    read_unlock(&orientation_lock);
+
+    read_lock(&state_lock);
+    if(local_orienation <= )
+    {
+        for()
+    }
 }
 
 long rotation_unlock(long id){
