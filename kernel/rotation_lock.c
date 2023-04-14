@@ -8,6 +8,10 @@
 
 int orientation;
 rwlock_t orientation_lock;
+rwlock_t listlock;
+rwlock_t state_lock;
+
+int access_state[360];
 
 struct thread_list {
     int type;
@@ -18,7 +22,7 @@ struct thread_list {
     struct list_head *next;
     struct list_head *prev;
 }
-LIST_HEAD(thread_list);
+struct thread_list head;
 
 long set_orientation (int degree){
 
@@ -28,8 +32,13 @@ long rotation_lock(int low, int high, int type){
     int local_orienation;
     static long id = 0;
 
-    //(1) struct dynamic alloc and init
-    struct thread_list *new_thread
+    //(1) Struct dynamic alloc and init
+    struct thread_list *new_thread = (thread_list*)malloc(sizeof(struct thread_list));
+    new_thread -> type = type;
+    new_thread -> low = low;
+    new_thread -> high = high;
+
+    //(2) Check R/W locks and
 }
 
 long rotation_unlock(long id){
