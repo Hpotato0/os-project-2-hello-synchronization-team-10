@@ -2,8 +2,8 @@
 #include <linux/spinlock.h>
 #include <linux/list.h>
 #include <linux/semaphore.h>
-#define ROTAION_LOCK_READ 100
-#define ROTATION_LOCK_WRITE 101
+#define ROT_READ  0
+#define ROT_WRITE 1
 // global variable
 
 int orientation;
@@ -56,7 +56,7 @@ long rotation_lock(int low, int high, int type){
         {
             for(i=low;i<=high;i++)
             {
-                if((type == ROTAION_LOCK_READ && access_state[i] == -1)||(type == ROTATION_LOCK_WRITE && access_state[i] !=0))
+                if((type == ROT_READ && access_state[i] == -1)||(type == ROT_WRITE && access_state[i] !=0))
                 {
                     start = 0;
                     break;
@@ -67,7 +67,7 @@ long rotation_lock(int low, int high, int type){
         {
             for(i=high;i<=(low + 360));i++)
             {
-                if((type == ROTAION_LOCK_READ && access_state[(i%360)] == -1)||(type == ROTATION_LOCK_WRITE && access_state[(i%360)] !=0))
+                if((type == ROT_READ && access_state[(i%360)] == -1)||(type == ROT_WRITE && access_state[(i%360)] !=0))
                 {
                     start = 0;
                     break;
