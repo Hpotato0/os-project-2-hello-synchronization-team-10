@@ -99,7 +99,7 @@ static void traverse_twice_give_rotlock()
     }
 }
 
-long set_orientation (int degree){
+SYSCALL_DEFINE1(set_orientation, int, degree){
     if(degree < 0 || degree >= 360)
         return -EINVAL;
 
@@ -118,7 +118,7 @@ long set_orientation (int degree){
     read_unlock(&orientation_lock);
 }
 
-long rotation_lock(int low, int high, int type){
+SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     int local_orientation;
     static long id = 0;
     int start = 1;
@@ -174,7 +174,7 @@ long rotation_lock(int low, int high, int type){
     return id;
 }
 
-long rotation_unlock(long id){
+SYSCALL_DEFINE1(rotation_unlock, long, id){
     int local_orientation;
     int i;
     struct my_struct* pos;
