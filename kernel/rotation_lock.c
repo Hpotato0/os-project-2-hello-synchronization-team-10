@@ -4,13 +4,14 @@
 #include <linux/semaphore.h>
 #define ROT_READ  0
 #define ROT_WRITE 1
-// global variable
-int orientation;
-DEFINE_RWLOCK(orientation_lock);
-DEFINE_RWLOCK(list_lock);
-DEFINE_RWLOCK(state_lock);
 
-int access_state[360];
+// global variable
+static int orientation;
+static int access_state[360];
+
+DEFINE_RWLOCK(orientation_lock);
+DEFINE_RWLOCK(state_lock);
+DEFINE_RWLOCK(list_lock);
 
 struct thread_node {
     struct list_head list;
@@ -22,10 +23,82 @@ struct thread_node {
 };
 LIST_HEAD(thread_list);
 
-int is_degree_in_range(int degree, int low, int high)
+static int is_degree_in_range(int degree, int low, int high)
 {
     return ((low <= high && low <= degree && degree <= high) || (low >= high && (high <= degree || degree <= low)));
 }
+
+static void traverse_twice_give_rotlock()
+{
+    struct thread_node* pos;
+    
+    // 1st traversal
+    list_for_each_entry(pos, &thread_list, list){
+        int low = pos->low;
+        int high = pos->high;
+
+        // check if write lock should be granted: (1)is degree in range?
+        if(pos->type == ROT_WRITE && is_degree_in_range(degree, low, high)){
+            // check if write lock should be granted: (2)any overlapping reads/writes?
+            int start = 1;
+            if(low <= high){
+                for(int idx = low; idx <= high; idx++){
+                    if(access_state[idx] != 0){start = 0; break;}}
+            }
+            else{
+                for(int idx = high; idx <= (low + 360); idx++){
+                    if(access_state[(idx%360)] != 0){start = 0; break;}}
+            }
+
+            // change access_state if write lock is granted
+            if(start){
+                up(&pos->start)
+                if(low <= high){
+                    for(int idx = low; idx <= high; idx++)
+                        access_state[idx] = -1;
+                }
+                else{
+                    for(int idx = high; idx <= (low+360); idx++)
+                        access_state[(idx%360)] = -1;
+                }
+            }
+        }
+    }
+
+    // 2nd traversal
+    list_for_each_entry(pos, &thread_list, list){
+        int low = pos->low;
+        int high = pos->high;
+
+        // check if read lock should be granted: (1)is degree in range?
+        if(pos->type == ROT_READ && is_degree_in_range(degree, low, high)){
+            // check if read lock should be granted: (2)any overlapping writes?
+            int start = 1;
+            if(low <= high){
+                for(int idx = low; idx <= high; idx++){
+                    if(access_state[idx] < 0){start = 0; break;}}
+            }
+            else{
+                for(int idx = high; idx <= (low + 360); idx++){
+                    if(access_state[(idx%360)] < 0){start = 0; break;}}
+            }
+
+            // change access_state if read lock is granted
+            if(start){
+                up(&pos->start)
+                if(low <= high){
+                    for(int idx = low; idx <= high; idx++)
+                        access_state[idx]++;
+                }
+                else{
+                    for(int idx = high; idx <= (low+360); idx++)
+                        access_state[(idx%360)]++;
+                }
+            }
+        }
+    }
+}
+
 long set_orientation (int degree){
     if(degree < 0 || degree >= 360)
         return -EINVAL;
@@ -38,97 +111,7 @@ long set_orientation (int degree){
     write_lock(&list_lock);
     write_lock(&state_lock);
 
-    //1st traversal
-    struct thread_node* pos;
-    list_for_each_entry(pos, &thread_list, list){
-        int low = pos->low;
-        int high = pos->high;
-        if(pos->type == ROT_WRITE && is_degree_in_range(degree, low, high)){
-            int start = 1;
-            if(low <= high){
-                for(int idx = low; idx <= high; idx++){
-                    if(access_state[idx] != 0){
-                        start = 0;
-                        break;
-                    }
-                }
-            }
-            else{
-                for(int idx = high; idx < 360; idx++){
-                    if(access_state[idx] != 0){
-                        start = 0;
-                        break;
-                    }
-                }
-                if(start){
-                for(int idx = 0; idx <= low; idx++){
-                    if(access_state[idx] != 0){
-                        start = 0;
-                        break;
-                    }
-                }
-                }
-            }
-
-            if(start)
-                up(&pos->start)
-            if(low <= high){
-                for(int idx = low; idx <= high; idx++)
-                    access_state[idx]--;
-            }
-            else{
-                for(int idx = high; idx < 360; idx++)
-                    access_state[idx]--;
-                for(int idx = 0; idx <= low; idx++)
-                    access_state[idx]--;
-            }
-        }
-    }
-
-    list_for_each_entry(pos, &thread_list, list){
-        int low = pos->low;
-        int high = pos->high;
-        if(pos->type == ROT_READ && is_degree_in_range(degree, low, high)){
-            int start = 1;
-            if(low <= high){
-                for(int idx = low; idx <= high; idx++){
-                    if(access_state[idx] < 0){
-                        start = 0;
-                        break;
-                    }
-                }
-            }
-            else{
-                for(int idx = high; idx < 360; idx++){
-                    if(access_state[idx] < 0){
-                        start = 0;
-                        break;
-                    }
-                }
-                if(start){
-                for(int idx = 0; idx <= low; idx++){
-                    if(access_state[idx] < 0){
-                        start = 0;
-                        break;
-                    }
-                }
-                }
-            }
-
-            if(start)
-                up(&pos->start)
-            if(low <= high){
-                for(int idx = low; idx <= high; idx++)
-                    access_state[idx]++;
-            }
-            else{
-                for(int idx = high; idx < 360; idx++)
-                    access_state[idx]++;
-                for(int idx = 0; idx <= low; idx++)
-                    access_state[idx]++;
-            }
-        }
-    }
+    traverse_twice_give_rotlock();
 
     write_unlock(&state_lock);
     write_unlock(&list_lock);
@@ -215,7 +198,7 @@ long rotation_unlock(long id){
     }
     else
     {
-        for(i=high;i<=(low + 360));i++)
+        for(i=high;i<=(low + 360);i++)
         {
             if(access_state[(i%360)] == -1)
                 access_state[(i%360)] = 0;
@@ -227,6 +210,8 @@ long rotation_unlock(long id){
         TODO: will be done by Mr.Ju.
         (2)Check linked list and grant if possible
     */
+    traverse_twice_give_rotlock();
+
     write_unlock(&state_lock);
 
     list_for_each_entry(pos, &thread_list, list)
