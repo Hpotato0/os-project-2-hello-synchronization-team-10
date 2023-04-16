@@ -24,6 +24,25 @@ struct thread_node {
 };
 LIST_HEAD(thread_list);
 
+
+static void display_current_state(void){
+    int counter = 0;
+    int i = 0;
+    struct thread_node* pos;
+    printk("[DISPLAY_CURRNET_STATE]\n");
+    list_for_each_entry(pos, &thread_list, list){
+        printk("THREAD [%d]- type: %d low: %d high: %d id: %ld\n",counter++, pos->type, pos->low, pos->high, pos->id);
+    }
+    printk("ACCESS STATE\n");
+    for(i = 0; i < 12; i++){
+        printk("%4d~%4d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", i*30, i*30+30, 
+        access_state[i], access_state[i+1], access_state[i+2], access_state[i+3], access_state[i+4], access_state[i+5], access_state[i+6], access_state[i+7], access_state[i+8], access_state[i+9],
+        access_state[i + 10], access_state[i+11], access_state[i+12], access_state[i+13], access_state[i+14], access_state[i+15], access_state[i+16], access_state[i+17], access_state[i+18], access_state[i+19],
+        access_state[i+20], access_state[i+21], access_state[i+22], access_state[i+23], access_state[i+24], access_state[i+25], access_state[i+26], access_state[i+27], access_state[i+28], access_state[i+29]);
+    }
+}
+
+
 static int is_degree_in_range(int degree, int low, int high) 
 {
     return ((low <= high && low <= degree && degree <= high) || (low >= high && (high <= degree || degree <= low)));
@@ -117,7 +136,7 @@ SYSCALL_DEFINE1(set_orientation, int, degree){
     write_unlock(&state_lock);
     write_unlock(&list_lock);
     read_unlock(&orientation_lock);
-
+    printk("[SET_ORIENTATION] degree: %d\n", degree);
     return 0;
 }
 
@@ -181,6 +200,8 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     write_unlock(&list_lock);
 
     down(&(new_thread->start));
+    printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, id);
+    display_current_state();
     return id;
 }
 
@@ -243,5 +264,7 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
     list_del(&(pos->list));
     kfree(pos);
     write_unlock(&list_lock);
+    printk("[UNLOCK] id: %ld\n", id);
+    display_current_state();
     return 0;
 }
