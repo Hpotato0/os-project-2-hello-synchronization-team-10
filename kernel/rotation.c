@@ -2,6 +2,7 @@
 #include <linux/spinlock.h>
 #include <linux/list.h>
 #include <linux/semaphore.h>
+#include <linux/slab.h>
 #define ROT_READ  0
 #define ROT_WRITE 1
 
@@ -23,42 +24,42 @@ struct thread_node {
 };
 LIST_HEAD(thread_list);
 
-static int is_degree_in_range(int degree, int low, int high)
+static int is_degree_in_range(int degree, int low, int high) 
 {
     return ((low <= high && low <= degree && degree <= high) || (low >= high && (high <= degree || degree <= low)));
 }
 
-static void traverse_twice_give_rotlock()
+static void traverse_twice_give_rotlock(void)
 {
     struct thread_node* pos;
+    int idx;
     
     // 1st traversal
     list_for_each_entry(pos, &thread_list, list){
         int low = pos->low;
         int high = pos->high;
-
         // check if write lock should be granted: (1)is degree in range?
-        if(pos->type == ROT_WRITE && is_degree_in_range(degree, low, high)){
+        if(pos->type == ROT_WRITE && is_degree_in_range(orientation, low, high)){
             // check if write lock should be granted: (2)any overlapping reads/writes?
             int start = 1;
             if(low <= high){
-                for(int idx = low; idx <= high; idx++){
+                for(idx = low; idx <= high; idx++){
                     if(access_state[idx] != 0){start = 0; break;}}
             }
             else{
-                for(int idx = high; idx <= (low + 360); idx++){
+                for(idx = high; idx <= (low + 360); idx++){
                     if(access_state[(idx%360)] != 0){start = 0; break;}}
             }
 
             // change access_state if write lock is granted
             if(start){
-                up(&pos->start)
+                up(&pos->start);
                 if(low <= high){
-                    for(int idx = low; idx <= high; idx++)
+                    for(idx = low; idx <= high; idx++)
                         access_state[idx] = -1;
                 }
                 else{
-                    for(int idx = high; idx <= (low+360); idx++)
+                    for(idx = high; idx <= (low+360); idx++)
                         access_state[(idx%360)] = -1;
                 }
             }
@@ -71,27 +72,27 @@ static void traverse_twice_give_rotlock()
         int high = pos->high;
 
         // check if read lock should be granted: (1)is degree in range?
-        if(pos->type == ROT_READ && is_degree_in_range(degree, low, high)){
+        if(pos->type == ROT_READ && is_degree_in_range(orientation, low, high)){
             // check if read lock should be granted: (2)any overlapping writes?
             int start = 1;
             if(low <= high){
-                for(int idx = low; idx <= high; idx++){
+                for(idx = low; idx <= high; idx++){
                     if(access_state[idx] < 0){start = 0; break;}}
             }
             else{
-                for(int idx = high; idx <= (low + 360); idx++){
+                for(idx = high; idx <= (low + 360); idx++){
                     if(access_state[(idx%360)] < 0){start = 0; break;}}
             }
 
             // change access_state if read lock is granted
             if(start){
-                up(&pos->start)
+                up(&pos->start);
                 if(low <= high){
-                    for(int idx = low; idx <= high; idx++)
+                    for(idx = low; idx <= high; idx++)
                         access_state[idx]++;
                 }
                 else{
-                    for(int idx = high; idx <= (low+360); idx++)
+                    for(idx = high; idx <= (low+360); idx++)
                         access_state[(idx%360)]++;
                 }
             }
@@ -116,6 +117,8 @@ SYSCALL_DEFINE1(set_orientation, int, degree){
     write_unlock(&state_lock);
     write_unlock(&list_lock);
     read_unlock(&orientation_lock);
+
+    return 0;
 }
 
 SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
@@ -123,9 +126,14 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     static long id = 0;
     int start = 1;
     int i;
+    struct thread_node *new_thread;
+    // TODO: check invlaid argument
+    if(low < 0 || low >= 360 || high < 0 || high >= 360 || type != ROT_READ || type != ROT_WRITE){
+        return -EINVAL;
+    }
 
     //(1) Struct dynamic alloc and init
-    struct thread_node *new_thread = (thread_node*)malloc(sizeof(struct thread_node));
+    new_thread = (struct thread_node*)kmalloc(sizeof(struct thread_node), GFP_KERNEL);
     new_thread -> type = type;
     new_thread -> low = low;
     new_thread -> high = high;
@@ -151,7 +159,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
         }
         else
         {
-            for(i=high;i<=(low + 360));i++)
+            for(i=high;i<=(low + 360);i++)
             {
                 if((type == ROT_READ && access_state[(i%360)] == -1)||(type == ROT_WRITE && access_state[(i%360)] !=0))
                 {
@@ -177,7 +185,11 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
 SYSCALL_DEFINE1(rotation_unlock, long, id){
     int local_orientation;
     int i;
-    struct my_struct* pos;
+    int low, high;
+    struct thread_node* pos;
+
+    // check invalid argument, return -EINVAL
+    if (id < 0) return -EINVAL;
 
     read_lock(&orientation_lock);
     local_orientation = orientation;
@@ -185,7 +197,19 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
 
     write_lock(&list_lock);
     //(1) Update R/W states corresponding to this thread
+    // TODO: find thread_node corresponding to id, 
+    list_for_each_entry(pos, &thread_list, list)
+    {
+        if (pos->id == id)
+        {
+            break;
+        }
+    }
+    if (pos->id != id) return -EPERM;
+    low = pos->low;
+    high = pos->high;
     write_lock(&state_lock);
+
     if(low <= high)
     {
         for(i=low;i<=high;i++)
@@ -214,14 +238,8 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
 
     write_unlock(&state_lock);
 
-    list_for_each_entry(pos, &thread_list, list)
-    {
-        if (pos->id == id)
-        {
-            break;
-        }
-    }
     list_del(&(pos->list));
-
+    kfree(pos);
     write_unlock(&list_lock);
+    return 0;
 }
