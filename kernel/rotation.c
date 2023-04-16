@@ -14,13 +14,6 @@ DEFINE_RWLOCK(orientation_lock);
 DEFINE_RWLOCK(state_lock);
 DEFINE_RWLOCK(list_lock);
 
-static void display_current_state()
-{
-    list_for_each_entry
-
-}
-
-
 struct thread_node {
     struct list_head list;
     int type;
@@ -30,6 +23,25 @@ struct thread_node {
     long id;
 };
 LIST_HEAD(thread_list);
+
+
+static void display_current_state(void){
+    int counter = 0;
+    int i = 0;
+    struct thread_node* pos;
+    printk("[DISPLAY_CURRNET_STATE]\n");
+    list_for_each_entry(pos, &thread_list, list){
+        printk("THREAD [%d]- type: %d low: %d high: %d id: %ld\n",counter++, pos->type, pos->low, pos->high, pos->id);
+    }
+    printk("ACCESS STATE\n");
+    for(i = 0; i < 360; i = i+30){
+        printk("%4d~%4d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", i*30, i*30+30, 
+        access_state[i], access_state[i+1], access_state[i+2], access_state[i+3], access_state[i+4], access_state[i+5], access_state[i+6], access_state[i+7], access_state[i+8], access_state[i+9],
+        access_state[i + 10], access_state[i+11], access_state[i+12], access_state[i+13], access_state[i+14], access_state[i+15], access_state[i+16], access_state[i+17], access_state[i+18], access_state[i+19],
+        access_state[i+20], access_state[i+21], access_state[i+22], access_state[i+23], access_state[i+24], access_state[i+25], access_state[i+26], access_state[i+27], access_state[i+28], access_state[i+29]);
+    }
+}
+
 
 static int is_degree_in_range(int degree, int low, int high) 
 {
@@ -99,6 +111,7 @@ SYSCALL_DEFINE1(set_orientation, int, degree){
 
     write_lock(&orientation_lock);
     orientation = degree;
+    display_current_state();
     write_unlock(&orientation_lock);
 
     read_lock(&orientation_lock);
@@ -110,7 +123,6 @@ SYSCALL_DEFINE1(set_orientation, int, degree){
     write_unlock(&state_lock);
     write_unlock(&list_lock);
     read_unlock(&orientation_lock);
-
     printk("[SET_ORIENTATION] degree: %d\n", degree);
     return 0;
 }
@@ -163,8 +175,9 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
                 }
             }
         }
-    } 
-    else start = 0;
+    }
+    else
+        start = 0;
     read_unlock(&state_lock);
     sema_init(&(new_thread -> start), start);
 
@@ -176,21 +189,19 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
 
     down(&(new_thread->start));
     write_lock(&state_lock);
-    if(low <= high) {
-        for(i=low; i <= high; i++){
+    if(low <= high){
+        for(i = low; i <= high; i++)
             if(type == ROT_READ) access_state[i]++;
-            else if(type == ROT_WRITE) access_state[i] = -1;
-        }
+            else if(type == ROT_WRITE) access_state[i] = -1; 
     }
-    else {
-        for(i=high; i <= low+360; i++){
+    else{
+        for(i = high; i <= (low+360); i++)
             if(type == ROT_READ) access_state[i]++;
             else if(type == ROT_WRITE) access_state[i] = -1;
-        }
     }
     write_unlock(&state_lock);
-    
-    printk("[LOCK] id: %ld degree: %d~%d, type: %d\n", id, low, high, type);
+    printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, id);
+    display_current_state();
     return id;
 }
 // long sys_rotation_unlock(long id)
@@ -254,5 +265,6 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
     kfree(pos);
     write_unlock(&list_lock);
     printk("[UNLOCK] id: %ld\n", id);
+    display_current_state();
     return 0;
 }

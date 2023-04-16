@@ -12,6 +12,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
 
 int main(int argc, char* argv[]){
     int low, high;
@@ -19,5 +20,7 @@ int main(int argc, char* argv[]){
     high = atoi(argv[2]);
     long id = syscall(SYSCALL_ROTATION_LOCK, low, high, ROT_READ);
     printf("[READ_LOCk] id: %ld degree: %d~%d\n", id,low,high);
+    if(id < 0)
+        printf("error during system call: %s\n", strerror(errno));
     return 0;
 }
