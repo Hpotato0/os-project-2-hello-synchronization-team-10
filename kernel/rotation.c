@@ -128,7 +128,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     int i;
     struct thread_node *new_thread;
     // TODO: check invlaid argument
-    if(low < 0 || low >= 360 || high < 0 || high >= 360 || type != ROT_READ || type != ROT_WRITE){
+    if(low < 0 || low >= 360 || high < 0 || high >= 360 || (type != ROT_READ && type != ROT_WRITE)){
         return -EINVAL;
     }
 
