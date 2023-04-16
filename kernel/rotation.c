@@ -240,7 +240,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     down(&(new_thread->start));
 
     printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, new_thread -> id);
-    display_current_state();
+    // display_current_state();
     return new_thread -> id;
 }
 
