@@ -215,7 +215,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     write_unlock(&list_lock);
 
     down(&(new_thread->start));
-    return id;
+    return new_thread -> id;
 }
 
 SYSCALL_DEFINE1(rotation_unlock, long, id){
