@@ -21,6 +21,7 @@ struct thread_node {
     int high;
     struct semaphore start;
     long id;
+    int is_started;
 };
 LIST_HEAD(thread_list);
 
@@ -58,7 +59,7 @@ static void traverse_twice_give_rotlock(void)
         int low = pos->low;
         int high = pos->high;
         // check if write lock should be granted: (1)is degree in range?
-        if(pos->type == ROT_WRITE && is_degree_in_range(orientation, low, high)){
+        if(pos->type == ROT_WRITE && is_degree_in_range(orientation, low, high) && (pos->is_started) == 0){
             // check if write lock should be granted: (2)any overlapping reads/writes?
             int start = 1;
             if(low <= high){
@@ -73,6 +74,7 @@ static void traverse_twice_give_rotlock(void)
             // change access_state if write lock is granted
             if(start){
                 up(&pos->start);
+                pos -> is_started = 1;
                 if(low <= high){
                     for(idx = low; idx <= high; idx++)
                         access_state[idx] = -1;
@@ -91,7 +93,7 @@ static void traverse_twice_give_rotlock(void)
         int high = pos->high;
 
         // check if read lock should be granted: (1)is degree in range?
-        if(pos->type == ROT_READ && is_degree_in_range(orientation, low, high)){
+        if(pos->type == ROT_READ && is_degree_in_range(orientation, low, high) && (pos->is_started) == 0){
             // check if read lock should be granted: (2)any overlapping writes?
             int start = 1;
             if(low <= high){
@@ -106,6 +108,7 @@ static void traverse_twice_give_rotlock(void)
             // change access_state if read lock is granted
             if(start){
                 up(&pos->start);
+                pos->is_started = 1;
                 if(low <= high){
                     for(idx = low; idx <= high; idx++)
                         access_state[idx]++;
@@ -162,7 +165,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     local_orientation = orientation;
     read_unlock(&orientation_lock);
 
-    read_lock(&state_lock);
+    write_lock(&state_lock);
     if(is_degree_in_range(local_orientation, low, high))
     {
         if(low <= high)
@@ -190,19 +193,51 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     }
     else
         start = 0;
-    read_unlock(&state_lock);
+
+    if(start == 1)
+    {
+        if(type == ROT_WRITE)
+        {
+            if(low <= high)
+            {
+                for(i = low; i <= high; i++)
+                        access_state[i] = -1;
+            }
+            else
+            {
+                for(i = high; i <= (low+360); i++)
+                        access_state[(i%360)] = -1;
+            }
+        }
+        else
+        {
+            if(low <= high)
+            {
+                for(i = low; i <= high; i++)
+                    access_state[i]++;
+            }
+            else
+            {
+                for(i = high; i <= (low+360); i++)
+                    access_state[(i%360)]++;
+            }
+        }
+    }
+    write_unlock(&state_lock);
     sema_init(&(new_thread -> start), start);
 
     //(3) add new_thread to linked list
     write_lock(&list_lock);
         new_thread -> id = id++;
+        new_thread -> is_started = start;
         list_add(&(new_thread->list), &thread_list);
     write_unlock(&list_lock);
 
     down(&(new_thread->start));
-    printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, id);
+
+    printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, new_thread -> id);
     display_current_state();
-    return id;
+    return new_thread -> id;
 }
 
 SYSCALL_DEFINE1(rotation_unlock, long, id){
