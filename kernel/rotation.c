@@ -3,6 +3,9 @@
 #include <linux/list.h>
 #include <linux/semaphore.h>
 #include <linux/slab.h>
+#include <linux/rotation.h>
+#include <linux/types.h>
+
 #define ROT_READ  0
 #define ROT_WRITE 1
 
@@ -22,26 +25,27 @@ struct thread_node {
     struct semaphore start;
     long id;
     int is_started;
+    pid_t pid;
 };
+
 LIST_HEAD(thread_list);
 
-
-static void display_current_state(void){
-    int counter = 0;
-    int i = 0;
-    struct thread_node* pos;
-    printk("[DISPLAY_CURRNET_STATE]\n");
-    list_for_each_entry(pos, &thread_list, list){
-        printk("THREAD [%d]- type: %d low: %d high: %d id: %ld\n",counter++, pos->type, pos->low, pos->high, pos->id);
-    }
-    printk("ACCESS STATE\n");
-    for(i = 0; i < 360; i = i + 30){
-        printk("%4d~%4d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", i*30, i*30+30, 
-        access_state[i], access_state[i+1], access_state[i+2], access_state[i+3], access_state[i+4], access_state[i+5], access_state[i+6], access_state[i+7], access_state[i+8], access_state[i+9],
-        access_state[i + 10], access_state[i+11], access_state[i+12], access_state[i+13], access_state[i+14], access_state[i+15], access_state[i+16], access_state[i+17], access_state[i+18], access_state[i+19],
-        access_state[i+20], access_state[i+21], access_state[i+22], access_state[i+23], access_state[i+24], access_state[i+25], access_state[i+26], access_state[i+27], access_state[i+28], access_state[i+29]);
-    }
-}
+// static void display_current_state(void){
+//     int counter = 0;
+//     int i = 0;
+//     struct thread_node* pos;
+//     printk("[DISPLAY_CURRNET_STATE]\n");
+//     list_for_each_entry(pos, &thread_list, list){
+//         printk("THREAD [%d]- type: %d low: %d high: %d id: %ld\n",counter++, pos->type, pos->low, pos->high, pos->id);
+//     }
+//     printk("ACCESS STATE\n");
+//     for(i = 0; i < 360; i = i + 30){
+//         printk("%4d~%4d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", i*30, i*30+30, 
+//         access_state[i], access_state[i+1], access_state[i+2], access_state[i+3], access_state[i+4], access_state[i+5], access_state[i+6], access_state[i+7], access_state[i+8], access_state[i+9],
+//         access_state[i + 10], access_state[i+11], access_state[i+12], access_state[i+13], access_state[i+14], access_state[i+15], access_state[i+16], access_state[i+17], access_state[i+18], access_state[i+19],
+//         access_state[i+20], access_state[i+21], access_state[i+22], access_state[i+23], access_state[i+24], access_state[i+25], access_state[i+26], access_state[i+27], access_state[i+28], access_state[i+29]);
+//     }
+// }
 
 
 static int is_degree_in_range(int degree, int low, int high) 
@@ -139,7 +143,7 @@ SYSCALL_DEFINE1(set_orientation, int, degree){
     write_unlock(&state_lock);
     write_unlock(&list_lock);
     read_unlock(&orientation_lock);
-    printk("[SET_ORIENTATION] degree: %d\n", degree);
+    // printk("[SET_ORIENTATION] degree: %d\n", degree);
     return 0;
 }
 
@@ -159,7 +163,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     new_thread -> type = type;
     new_thread -> low = low;
     new_thread -> high = high;
-
+    new_thread -> pid = task_pid_nr(current);
     //(2) Check R/W locks & orientation, then set start
     read_lock(&orientation_lock);
     local_orientation = orientation;
@@ -236,7 +240,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
     down(&(new_thread->start));
 
     printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, new_thread -> id);
-    display_current_state();
+    // display_current_state();
     return new_thread -> id;
 }
 
@@ -307,7 +311,46 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
     list_del(&(pos->list));
     kfree(pos);
     write_unlock(&list_lock);
-    printk("[UNLOCK] id: %ld\n", id);
-    display_current_state();
+    // printk("[UNLOCK] id: %ld\n", id);
+    // display_current_state();
     return 0;
+}
+
+
+void exit_rotlock(struct task_struct *tsk){
+    struct thread_node *pos, *tmp;
+    int low, high, i;
+    pid_t pid = tsk->pid;
+    list_for_each_entry_safe(pos, tmp, &thread_list, list){
+        if(pos->pid==pid) {
+            if(pos->is_started) {
+                low = pos->low;
+                high = pos->high;
+                write_lock(&state_lock);
+                if(low <= high)
+                {
+                    for(i=low;i<=high;i++)
+                    {
+                        if(access_state[i] == -1)
+                            access_state[i] = 0;
+                        else if(access_state[i] > 0)
+                            access_state[i]--;
+                    }
+                }
+                else
+                {
+                    for(i=high;i<=(low + 360);i++)
+                    {
+                        if(access_state[(i%360)] == -1)
+                            access_state[(i%360)] = 0;
+                        else if(access_state[(i%360)] > 0)
+                            access_state[(i%360)]--;
+                    }
+                }
+                traverse_twice_give_rotlock();
+                write_unlock(&state_lock);
+            }
+            list_del(&pos->list);
+        }
+    }
 }
