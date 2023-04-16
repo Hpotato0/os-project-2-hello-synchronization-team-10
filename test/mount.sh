@@ -1,5 +1,6 @@
 #!/bin/bash
-PROJECT_PATH="/home/hyeonseok/os_project/project-2-hello-synchronization-team-10"
+CURRENT_PATH=$(pwd)
+PROJECT_PATH="$CURRENT_PATH"/..
 TARGET=$1
 
 mkdir "$PROJECT_PATH"/mntdir
