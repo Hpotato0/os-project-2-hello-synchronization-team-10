@@ -12,11 +12,17 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdio.h>
+#include <errno.h>
 
 int main(int argc, char* argv[]){
     int low, high;
     long id = atoi(argv[1]);
-    syscall(SYSCALL_ROTATION_UNLOCK, id);
-    printf("[UNLOCK] id: %ld\n", id);
+    long ret = syscall(SYSCALL_ROTATION_UNLOCK, id);
+    
+    if(ret == 0)
+        printf("[UNLOCK] id: %ld\n", id);
+    else
+        printf("[UNLOCK] error: %s\n", strerror(errno));
+    
     return 0;
 }

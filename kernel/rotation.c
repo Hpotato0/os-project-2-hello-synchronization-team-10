@@ -256,6 +256,10 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
     write_lock(&list_lock);
     //(1) Update R/W states corresponding to this thread
     // TODO: find thread_node corresponding to id, 
+    if(list_empty(&thread_list)){
+        write_unlock(&list_lock);
+        return -EPERM;
+    }
     list_for_each_entry(pos, &thread_list, list)
     {
         if (pos->id == id)
@@ -263,7 +267,11 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
             break;
         }
     }
-    if (pos->id != id) return -EPERM;
+    if (&pos->list == &thread_list) 
+    {
+        write_unlock(&list_lock);
+        return -EPERM;
+    }
     low = pos->low;
     high = pos->high;
     write_lock(&state_lock);
