@@ -169,6 +169,8 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
             }
         }
     }
+    else
+        start = 0;
     read_unlock(&state_lock);
     sema_init(&(new_thread -> start), start);
 
