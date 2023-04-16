@@ -1,14 +1,14 @@
 #!/bin/bash
 PROJECT_PATH="/home/hyeonseok/os_project/project-2-hello-synchronization-team-10"
 
-for CODE in "student" "rotd" "professor"
+for CODE in "student" "rotd" "professor" "slow_rotd" "slow_readlock" "slow_writelock" "slow_unlock"
 do
   aarch64-linux-gnu-gcc ""$CODE".c" -o "$CODE" -static -lm
 done
 
 mkdir "$PROJECT_PATH"/mntdir
 sudo mount "$PROJECT_PATH"/tizen-image/rootfs.img "$PROJECT_PATH"/mntdir
-for CODE in "student" "rotd" "professor"
+for CODE in "student" "rotd" "professor" "slow_rotd" "slow_readlock" "slow_writelock" "slow_unlock"
 do
   sudo cp  "$CODE" "$PROJECT_PATH"/mntdir/root 
 done
