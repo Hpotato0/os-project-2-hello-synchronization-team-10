@@ -321,6 +321,7 @@ void exit_rotlock(struct task_struct *tsk){
     struct thread_node *pos, *tmp;
     int low, high, i;
     pid_t pid = tsk->pid;
+    write_lock(&list_lock);
     list_for_each_entry_safe(pos, tmp, &thread_list, list){
         if(pos->pid==pid) {
             if(pos->is_started) {
@@ -353,4 +354,5 @@ void exit_rotlock(struct task_struct *tsk){
             list_del(&pos->list);
         }
     }
+    write_unlock(&list_lock);
 }
