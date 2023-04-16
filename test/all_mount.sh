@@ -1,5 +1,6 @@
 #!/bin/bash
-PROJECT_PATH="/home/hyeonseok/os_project/project-2-hello-synchronization-team-10"
+CURRENT_PATH=$(pwd)
+PROJECT_PATH="$CURRENT_PATH"/..
 
 for CODE in "student" "rotd" "professor" "slow_rotd" "slow_readlock" "slow_writelock" "slow_unlock"
 do
