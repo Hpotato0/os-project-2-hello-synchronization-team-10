@@ -34,7 +34,7 @@ static void display_current_state(void){
         printk("THREAD [%d]- type: %d low: %d high: %d id: %ld\n",counter++, pos->type, pos->low, pos->high, pos->id);
     }
     printk("ACCESS STATE\n");
-    for(i = 0; i < 12; i++){
+    for(i = 0; i < 360; i = i + 30){
         printk("%4d~%4d: %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d %d", i*30, i*30+30, 
         access_state[i], access_state[i+1], access_state[i+2], access_state[i+3], access_state[i+4], access_state[i+5], access_state[i+6], access_state[i+7], access_state[i+8], access_state[i+9],
         access_state[i + 10], access_state[i+11], access_state[i+12], access_state[i+13], access_state[i+14], access_state[i+15], access_state[i+16], access_state[i+17], access_state[i+18], access_state[i+19],
