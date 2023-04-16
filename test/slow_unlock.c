@@ -17,6 +17,6 @@ int main(int argc, char* argv[]){
     int low, high;
     long id = atoi(argv[1]);
     syscall(SYSCALL_ROTATION_UNLOCK, id);
-    printf("[UNLOCK] id: %ld\n", id);
+    printf("[UNLOCK] id: %ld\ndms", id);
     return 0;
 }
