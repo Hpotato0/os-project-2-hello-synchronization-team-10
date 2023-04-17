@@ -50,7 +50,7 @@ LIST_HEAD(thread_list);
 
 static int is_degree_in_range(int degree, int low, int high) 
 {
-    return ((low <= high && low <= degree && degree <= high) || (low >= high && (high <= degree || degree <= low)));
+    return ((low <= high && low <= degree && degree <= high) || (low >= high && (low <= degree || degree <= high)));
 }
 
 static void traverse_twice_give_rotlock(void)
@@ -71,7 +71,7 @@ static void traverse_twice_give_rotlock(void)
                     if(access_state[idx] != 0){start = 0; break;}}
             }
             else{
-                for(idx = high; idx <= (low + 360); idx++){
+                for(idx = low; idx <= (high + 360); idx++){
                     if(access_state[(idx%360)] != 0){start = 0; break;}}
             }
 
@@ -84,7 +84,7 @@ static void traverse_twice_give_rotlock(void)
                         access_state[idx] = -1;
                 }
                 else{
-                    for(idx = high; idx <= (low+360); idx++)
+                    for(idx = low; idx <= (high+360); idx++)
                         access_state[(idx%360)] = -1;
                 }
             }
@@ -105,7 +105,7 @@ static void traverse_twice_give_rotlock(void)
                     if(access_state[idx] < 0){start = 0; break;}}
             }
             else{
-                for(idx = high; idx <= (low + 360); idx++){
+                for(idx = low; idx <= (high + 360); idx++){
                     if(access_state[(idx%360)] < 0){start = 0; break;}}
             }
 
@@ -118,7 +118,7 @@ static void traverse_twice_give_rotlock(void)
                         access_state[idx]++;
                 }
                 else{
-                    for(idx = high; idx <= (low+360); idx++)
+                    for(idx = low; idx <= (high+360); idx++)
                         access_state[(idx%360)]++;
                 }
             }
@@ -185,7 +185,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
         }
         else
         {
-            for(i=high;i<=(low + 360);i++)
+            for(i=low;i<=(high + 360);i++)
             {
                 if((type == ROT_READ && access_state[(i%360)] == -1)||(type == ROT_WRITE && access_state[(i%360)] !=0))
                 {
@@ -222,7 +222,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
             }
             else
             {
-                for(i = high; i <= (low+360); i++)
+                for(i = low; i <= (high+360); i++)
                     access_state[(i%360)]++;
             }
         }
@@ -239,7 +239,7 @@ SYSCALL_DEFINE3(rotation_lock, int, low, int, high, int, type){
 
     down(&(new_thread->start));
 
-    printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, new_thread -> id);
+    // printk("[ROTATION_LOCK] low: %d high: %d tpye:%d id: %ld\n", low, high, type, new_thread -> id);
     // display_current_state();
     return new_thread -> id;
 }
@@ -292,7 +292,7 @@ SYSCALL_DEFINE1(rotation_unlock, long, id){
     }
     else
     {
-        for(i=high;i<=(low + 360);i++)
+        for(i=low;i<=(high + 360);i++)
         {
             if(access_state[(i%360)] == -1)
                 access_state[(i%360)] = 0;
@@ -340,7 +340,7 @@ void exit_rotlock(struct task_struct *tsk){
                 }
                 else
                 {
-                    for(i=high;i<=(low + 360);i++)
+                    for(i=low;i<=(high + 360);i++)
                     {
                         if(access_state[(i%360)] == -1)
                             access_state[(i%360)] = 0;

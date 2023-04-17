@@ -87,7 +87,6 @@ int main(int argc, char* argv[]){
         primefactorial(num, low, high);
         close(fd);       
         syscall(SYS_ROT_UNLOCK, lock_id);
-        sleep(1);
     }
 
     return 0;

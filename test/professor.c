@@ -57,7 +57,6 @@ int main(int argc, char* argv[]){
         printf("professor: %d\n", counter);
         counter++;
         syscall(SYS_ROT_UNLOCK, lock_id);
-        sleep(1);
     }
 
     return 0;
