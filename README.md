@@ -35,12 +35,12 @@ One global variable(`int orientation`) and two global structures(`thread_list`, 
 
 ## 2. Global Structures
 **thread_list**: A linked list saving all lock requests(both granted and not granted). Each node is a `struct thread_node` and consists of:
-* **struct list_head list**  : 'inherits' the linked list
-* **int type, low, high**    : basic info
-* **struct semaphore start** : the actual lock that blocks in rotation_lock until access is granted
-* **long id**                : the id that rotation_lock returns, and rotation_unlock accepts
-* **int is_started**         : marks granted requests
-* **pid_t pid**              : for auto revocation when a thread exits without revoking
+* `struct list_head list`  : 'inherits' the linked list
+* `int type, low, high`    : basic request info
+* `struct semaphore start` : the actual lock that blocks in rotation_lock until access is granted
+* `long id`                : the id that rotation_lock returns, and rotation_unlock accepts
+* `int is_started`         : marks granted requests
+* `pid_t pid`             : for auto revocation when a thread exits without revoking
 
 **access_state**: An int array of 360 elements. Saves the access state per angle in the following format:
 * 0        : FREE
