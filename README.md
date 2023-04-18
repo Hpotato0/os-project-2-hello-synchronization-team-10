@@ -4,7 +4,7 @@
 * test code: ./test/{rotd.c,professor.c,student.c}
 
 ## 0. Running & Testing
-The kernel build, test code compilation & running procedure did not change from project0 README. It is convenient to use tmux for running and monitoring multiple binaries.
+The kernel build, test code compilation & running procedure did not change from project0 README. Use tmux to conveniently run and monitor multiple binaries.
 ```bash
 root:~> ./rotd
 ```
