@@ -34,7 +34,7 @@ The 'auto' revocation is done by the funciton exit_rotlock, which is called insi
 One global variable(orientation) and two global structures(thread_list, access state) are used to keep track of all needed info. A read-write lock is created for each of these global objects, so a total of three read-write locks.
 
 ## 2. Global Structures
-**thread_list**: a linked list saving all lock requests, both granted and not granted
+**thread_list**: A linked list saving all lock requests(both granted and not granted). Each node is a `struct thread_node` and consists of:
 * **struct list_head list**  : 'inherits' the linked list
 * **int type, low, high**    : basic info
 * **struct semaphore start** : the actual lock that blocks in rotation_lock until access is granted
@@ -42,7 +42,7 @@ One global variable(orientation) and two global structures(thread_list, access s
 * **int is_started**         : marks granted requests
 * **pid_t pid**              : for auto revocation when a thread exits without revoking
 
-**access_state**: an int array of 360, saves the access state per angle
+**access_state**: An int array of 360, saves the access state per angle in the following format:
 * 0        : FREE
 * -1       : a thread is WRITING
 * n (n>0)  : n threads are READING
