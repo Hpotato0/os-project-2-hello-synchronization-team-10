@@ -52,7 +52,7 @@ The semaphore `start` of each request is initialized at `rotation_lock` to eithe
 * at the end of `rotation_lock`:
 ```c
 down(&(new_thread->start));
-return new_thread -> id;
+return new_thread->id;
 ```
 * inside `rotation_unlock` and `set_orientation`, when the conditions are satisfied for the request node `pos` to be granted:
 ```c
