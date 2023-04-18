@@ -60,6 +60,6 @@ up(&pos->start);
 ```
 
 ## 4. Lessons Learned
-* The linux kernel does OOC using C! (`struct list_head`)
+* The linux kernel does OOP using C! (`struct list_head`)
 * We can implement a complex lock using simple basic lock. (semaphore -> rotation_lock)
 * Even a simple concurrent program requires complex lock structure
