@@ -5,6 +5,15 @@
 
 ## 0. Running & Testing
 The kernel build, test code compilation & running procedure did not change from project0 README.
+```bash
+root:~> ./rotd
+```
+```bash
+root:~> ./professor 2748
+```
+```bash
+root:~> ./student 10 70
+```
 
 ## 1. Implementation Overview
 Three syscalls are implemented: set_orientation, rotation_lock, rotation_unlock.
