@@ -31,7 +31,7 @@ A node gets deleted when (1)the granted lock gets normally revoked, or (2)the co
 
 The 'auto' revocation is done by the funciton `exit_rotlock()`, which is called inside `do_exit()` in kernel/exit.c.
 
-One global variable(`int orientation`) and two global structures(`thread_list`, `access state`) are used to keep track of all needed info. A read-write lock is created for each of these global objects, so a total of three read-write locks.
+One global variable(`int orientation`) and two global structures(`thread_list`, `access_state`) are used to keep track of all needed info. A read-write lock is created for each of these global objects, so a total of three read-write locks.
 
 ## 2. Global Structures
 **thread_list**: A linked list saving all lock requests(both granted and not granted). Each node is a `struct thread_node` and consists of:
