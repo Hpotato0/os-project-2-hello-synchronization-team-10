@@ -1,4 +1,4 @@
-# Project 2: hello, synchroization!
+# Project 2: hello, synchronization!
 * team 10: 김현석, 홍주원, 주재형
 * main implementation: ./kernel/rotation.c
 * test code: ./test/{rotd.c,professor.c,student.c}
