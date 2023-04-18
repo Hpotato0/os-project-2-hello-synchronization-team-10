@@ -48,16 +48,16 @@ One global variable(`int orientation`) and two global structures(`thread_list`, 
 * n (n>0)  : n threads are READING
 
 ## 3. Implementation Detail: Access Grants
-The semaphore `start` of each request is initialized at `rotation_lock` to either 1 or 0, based on whether the lock could be granted or not. Then at the end of `rotation_lock`, `down` to the semaphore is called. If `new_thread->start` was initialized to 0 this would block until `up` is called during the traversals done in `rotation_unlock` and `set_orientation`.
-* at the end of `rotation_lock`:
+The semaphore `start` of each request is initialized at `rotation_lock()` to either 1 or 0, based on whether the lock could be granted or not. Then at the end of `rotation_lock()`, `down()` to the semaphore is called. If `new_thread->start` was initialized to 0 this would block until `up()` is called for that semaphore during the traversals done in `rotation_unlock()` and `set_orientation()`.
+* at the end of `rotation_lock()`:
 ```c
 down(&(new_thread->start));
 return new_thread->id;
 ```
-* inside `rotation_unlock` and `set_orientation`, when the conditions are satisfied for the request node `pos` to be granted:
+* inside `rotation_unlock()` and `set_orientation()`, when the conditions are satisfied for the request node `pos` to be granted:
 ```c
 up(&pos->start);
 ```
 
 ## 4. Lessons Learned
-* The linux kernel does OOC using C! (struct list_head)
+* The linux kernel does OOC using C! (`struct list_head`)
