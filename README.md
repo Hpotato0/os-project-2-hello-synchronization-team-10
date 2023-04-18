@@ -12,7 +12,7 @@ Three syscalls are implemented: set_orientation, rotation_lock, rotation_unlock.
 If at some point the condition for an access request to be granted is satisfied, it is granted.
 
 This is guaranteed by keeping a linked list of all access requests and traversing it every time the related states change
-i.e. every time (1)the orientation changes(set_orientation), or (2)a granted lock gets revoked(rotation_unlock). Of course, the lock can also be directly granted at rotation_lock, 
+i.e. every time (1)the orientation changes(set_orientation), or (2)a granted lock gets revoked(rotation_unlock). Of course, the lock can also be directly granted at rotation_lock.
 
 To keep write from starving, the traversal actually happens twice. The first to give all possible write grants, and the second to give all possible read grants.
 
