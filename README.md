@@ -4,7 +4,7 @@
 * test code: ./test/{rotd.c,professor.c,student.c}
 
 ## 0. Running & Testing
-Nothing changed from project0 README.
+The kernel build, test code compilation & running procedure did not change from project0 README.
 
 ## 1. Implementation Overview
 Three syscalls are implemented: set_orientation, rotation_lock, rotation_unlock.
