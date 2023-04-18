@@ -38,7 +38,7 @@ One global variable(`int orientation`) and two global structures(`thread_list`, 
 * `struct list_head list`  : 'inherits' the linked list
 * `int type, low, high`    : basic request info
 * `struct semaphore start` : the actual lock that blocks in rotation_lock until access is granted
-* `long id`                : the id that rotation_lock returns, and rotation_unlock accepts
+* `long id`                : the id that rotation_lock() returns, and rotation_unlock() accepts
 * `int is_started`         : marks granted requests
 * `pid_t pid`             : for auto revocation when a thread exits without revoking
 
